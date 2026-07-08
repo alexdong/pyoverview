@@ -1,6 +1,6 @@
-# outliner
+# pyoverview
 
-`outliner` is a small terminal outline browser for Python files. It parses a
+`pyoverview` is a small terminal outline browser for Python files. It parses a
 module with Python's `ast` module and opens a two-pane TUI:
 
 - left pane: classes, functions, async functions, and nested definitions
@@ -9,13 +9,13 @@ module with Python's `ast` module and opens a two-pane TUI:
 ## Install
 
 ```sh
-uvx outliner path/to/module.py
+uvx pyoverview path/to/module.py
 ```
 
 If you are developing locally:
 
 ```sh
-uv run outliner path/to/module.py
+uv run pyoverview path/to/module.py
 ```
 
 ## Keys
@@ -30,7 +30,7 @@ uv run outliner path/to/module.py
 ## Non-interactive Use
 
 ```sh
-outliner --print path/to/module.py
+pyoverview --print path/to/module.py
 ```
 
 This prints the outline without opening the TUI.

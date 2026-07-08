@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from outliner.outline import OutlineError, flatten_outline, format_outline, parse_python_source
+from pyoverview.outline import OutlineError, flatten_outline, format_outline, parse_python_source
 
 
 SAMPLE = '''

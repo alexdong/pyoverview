@@ -9,7 +9,7 @@ from .tui import CursesUnavailableError, run_tui
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="outliner",
+        prog="pyoverview",
         description="Open a two-pane terminal outline for a Python module.",
     )
     parser.add_argument("file", type=Path, help="Python file to browse")

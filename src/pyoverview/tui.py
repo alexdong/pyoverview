@@ -110,7 +110,7 @@ def _draw(stdscr: curses.window, state: State) -> None:
     stdscr.erase()
     height, width = stdscr.getmaxyx()
     if height < 8 or width < 50:
-        _addnstr(stdscr, 0, 0, "terminal is too small for outliner", max(0, width - 1), curses.A_BOLD)
+        _addnstr(stdscr, 0, 0, "terminal is too small for pyoverview", max(0, width - 1), curses.A_BOLD)
         stdscr.refresh()
         return
 
