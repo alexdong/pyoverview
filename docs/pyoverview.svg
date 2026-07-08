@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">pyoverview terminal UI screenshot</title>
+  <desc id="desc">A two-pane terminal interface showing a Python outline on the left and syntax-highlighted source code on the right.</desc>
+  <rect width="1200" height="720" rx="18" fill="#0d1117"/>
+  <rect x="28" y="28" width="1144" height="664" rx="12" fill="#111820" stroke="#30363d" stroke-width="2"/>
+  <rect x="28" y="28" width="1144" height="42" rx="12" fill="#161b22"/>
+  <rect x="28" y="58" width="1144" height="12" fill="#161b22"/>
+  <circle cx="58" cy="49" r="7" fill="#ff5f56"/>
+  <circle cx="80" cy="49" r="7" fill="#ffbd2e"/>
+  <circle cx="102" cy="49" r="7" fill="#27c93f"/>
+  <text x="600" y="55" text-anchor="middle" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="14" fill="#8b949e">pyoverview reviewer.py</text>
+
+  <rect x="54" y="94" width="334" height="536" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+  <rect x="388" y="94" width="758" height="536" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
+  <rect x="54" y="94" width="334" height="34" fill="#111820"/>
+  <rect x="388" y="94" width="758" height="34" fill="#111820"/>
+  <text x="72" y="116" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#f0f6fc" font-weight="700">outline: reviewer.py</text>
+  <text x="406" y="116" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#f0f6fc" font-weight="700">code: SFT L1</text>
+
+  <rect x="66" y="143" width="309" height="27" fill="#238636"/>
+  <text x="76" y="162" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#ffffff">&gt; S SFT</text>
+  <text x="86" y="199" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#79c0ff">C ReviewFinding</text>
+  <text x="86" y="231" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#7ee787">F sft_dataset()</text>
+  <text x="86" y="263" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#7ee787">F run_sft()</text>
+  <text x="76" y="307" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#f0f6fc" font-weight="700">S GRPO</text>
+  <text x="86" y="339" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#7ee787">F grpo_dataset()</text>
+  <text x="86" y="371" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#7ee787">F reward_metadata()</text>
+  <text x="86" y="403" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#7ee787">F run_grpo()</text>
+  <text x="76" y="447" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#f0f6fc" font-weight="700">S Evaluation</text>
+  <text x="86" y="479" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#7ee787">F score_rows()</text>
+  <text x="86" y="511" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15" fill="#7ee787">F write_summary()</text>
+
+  <g font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="15">
+    <text x="412" y="162" fill="#6e7681">  1</text>
+    <text x="468" y="162" fill="#79c0ff"># %% SFT</text>
+
+    <text x="412" y="194" fill="#6e7681">  2</text>
+    <text x="468" y="194" fill="#ff7b72" font-weight="700">class</text>
+    <text x="524" y="194" fill="#f0f6fc"> ReviewFinding(BaseModel):</text>
+
+    <text x="412" y="226" fill="#6e7681">  3</text>
+    <text x="468" y="226" fill="#f0f6fc">    label: Literal[</text>
+    <text x="636" y="226" fill="#a5d6ff">&quot;accept&quot;</text>
+    <text x="720" y="226" fill="#f0f6fc">, </text>
+    <text x="744" y="226" fill="#a5d6ff">&quot;reject&quot;</text>
+    <text x="820" y="226" fill="#f0f6fc">]</text>
+
+    <text x="412" y="258" fill="#6e7681">  4</text>
+    <text x="468" y="258" fill="#f0f6fc">    score: float</text>
+
+    <text x="412" y="322" fill="#6e7681">  6</text>
+    <text x="468" y="322" fill="#ff7b72" font-weight="700">def</text>
+    <text x="508" y="322" fill="#d2a8ff"> sft_dataset</text>
+    <text x="620" y="322" fill="#f0f6fc">(rows: Sequence[ReviewFinding]) -&gt; Dataset:</text>
+
+    <text x="412" y="354" fill="#6e7681">  7</text>
+    <text x="468" y="354" fill="#ff7b72" font-weight="700">return</text>
+    <text x="532" y="354" fill="#f0f6fc"> Dataset.from_list([row.model_dump() </text>
+    <text x="868" y="354" fill="#ff7b72" font-weight="700">for</text>
+    <text x="908" y="354" fill="#f0f6fc"> row </text>
+    <text x="956" y="354" fill="#ff7b72" font-weight="700">in</text>
+    <text x="984" y="354" fill="#f0f6fc"> rows])</text>
+
+    <text x="412" y="418" fill="#6e7681">  9</text>
+    <text x="468" y="418" fill="#79c0ff"># %% GRPO</text>
+
+    <text x="412" y="450" fill="#6e7681"> 10</text>
+    <text x="468" y="450" fill="#ff7b72" font-weight="700">def</text>
+    <text x="508" y="450" fill="#d2a8ff"> reward_metadata</text>
+    <text x="660" y="450" fill="#f0f6fc">(completion: str) -&gt; dict[str, float]:</text>
+
+    <text x="412" y="482" fill="#6e7681"> 11</text>
+    <text x="468" y="482" fill="#ff7b72" font-weight="700">return</text>
+    <text x="532" y="482" fill="#f0f6fc"> {</text>
+    <text x="556" y="482" fill="#a5d6ff">&quot;confidence&quot;</text>
+    <text x="672" y="482" fill="#f0f6fc">: </text>
+    <text x="696" y="482" fill="#79c0ff">float</text>
+    <text x="748" y="482" fill="#f0f6fc">(completion.strip()[:</text>
+    <text x="916" y="482" fill="#ffa657">1</text>
+    <text x="928" y="482" fill="#f0f6fc">])}</text>
+
+    <text x="412" y="546" fill="#6e7681"> 13</text>
+    <text x="468" y="546" fill="#8b949e"># q quit | up/down select | enter center | r reload</text>
+  </g>
+
+  <rect x="54" y="640" width="1092" height="28" fill="#161b22"/>
+  <text x="70" y="659" font-family="SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace" font-size="14" fill="#c9d1d9">/workspace/reviewer.py | q quit | up/down select | pgup/pgdn code | enter center | r reload</text>
+</svg>

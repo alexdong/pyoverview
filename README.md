@@ -7,6 +7,8 @@ module with Python's `ast` module and opens a two-pane TUI:
 - right pane: syntax-highlighted source code on the terminal's default background,
   automatically scrolled to the selected symbol
 
+![pyoverview terminal UI showing an outline pane and syntax-highlighted code preview](docs/pyoverview.svg)
+
 ## Sections
 
 Add module-level section comments to group the outline into larger chunks:
