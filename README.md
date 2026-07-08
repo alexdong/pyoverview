@@ -8,7 +8,7 @@ module with Python's `ast` module and opens a two-pane TUI:
 
 ## Sections
 
-Add module-level region comments to group the outline into larger chunks:
+Add module-level section comments to group the outline into larger chunks:
 
 ```python
 # region Configuration
@@ -30,7 +30,22 @@ async def score_patch():
     ...
 ```
 
-`pyoverview` renders those region comments as section nodes:
+`# %% Title` cell comments are also supported:
+
+```python
+# %% SFT
+
+def sft_dataset():
+    ...
+
+
+# %% GRPO
+
+def grpo_dataset():
+    ...
+```
+
+`pyoverview` renders those comments as section nodes:
 
 ```text
 reviewer.py
@@ -41,8 +56,9 @@ reviewer.py
     async function: async score_patch()  L16
 ```
 
-Only comments starting at the beginning of a line with `# region ` create
-sections. A section runs until the next region marker or the end of the file.
+Only comments starting at the beginning of a line with `# region `, `# %% `, or
+`#%% ` create sections. A section runs until the next section marker or the end
+of the file.
 
 ## Install
 

@@ -119,6 +119,33 @@ def two():
     ]
 
 
+def test_cell_comments_group_top_level_symbols_into_sections() -> None:
+    source = '''
+# %% SFT
+def sft_dataset():
+    return []
+
+
+#%% GRPO
+def grpo_dataset():
+    return []
+
+
+# %%
+def unsectioned():
+    return None
+'''
+
+    root = parse_python_source(source, module_name="cells.py")
+
+    assert [(child.kind, child.display_name) for child in root.children] == [
+        ("section", "SFT"),
+        ("section", "GRPO"),
+    ]
+    assert [child.display_name for child in root.children[0].children] == ["sft_dataset()"]
+    assert [child.display_name for child in root.children[1].children] == ["grpo_dataset()", "unsectioned()"]
+
+
 def test_format_outline_prints_sections() -> None:
     source = '''
 # region First

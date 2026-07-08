@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 
-SECTION_PREFIX = "# region "
+SECTION_PREFIXES = ("# region ", "# %% ", "#%% ")
 
 
 class OutlineError(Exception):
@@ -164,9 +164,7 @@ def _apply_sections(symbols: list[Symbol], source_lines: list[str], line_count: 
 def _section_markers(source_lines: list[str], line_count: int) -> list[Symbol]:
     markers: list[tuple[str, int]] = []
     for line_index, line in enumerate(source_lines, start=1):
-        if not line.startswith(SECTION_PREFIX):
-            continue
-        title = line[len(SECTION_PREFIX) :].strip()
+        title = _section_title(line)
         if title:
             markers.append((title, line_index))
 
@@ -175,6 +173,14 @@ def _section_markers(source_lines: list[str], line_count: int) -> list[Symbol]:
         end_lineno = markers[index + 1][1] - 1 if index + 1 < len(markers) else line_count
         sections.append(Symbol(title, "section", lineno, end_lineno))
     return sections
+
+
+def _section_title(line: str) -> Optional[str]:
+    for prefix in SECTION_PREFIXES:
+        if line.startswith(prefix):
+            title = line[len(prefix) :].strip()
+            return title or None
+    return None
 
 
 def _append_symbol(lines: list[str], symbol: Symbol, depth: int) -> None:
