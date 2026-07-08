@@ -63,6 +63,78 @@ def test_format_outline_includes_line_numbers() -> None:
     ]
 
 
+def test_region_comments_group_top_level_symbols_into_sections() -> None:
+    source = '''
+def before():
+    return None
+
+
+# region Configuration
+SETTING = "on"
+
+
+def load_config():
+    return SETTING
+
+
+# region Review Model
+class Finding:
+    pass
+
+
+async def score():
+    return Finding()
+'''
+
+    root = parse_python_source(source, module_name="sectioned.py")
+
+    assert [(child.kind, child.display_name) for child in root.children] == [
+        ("function", "before()"),
+        ("section", "Configuration"),
+        ("section", "Review Model"),
+    ]
+    assert [child.display_name for child in root.children[1].children] == ["load_config()"]
+    assert [child.display_name for child in root.children[2].children] == ["Finding", "async score()"]
+
+
+def test_region_comments_are_included_in_flattened_outline() -> None:
+    source = '''
+# region First
+def one():
+    return 1
+
+
+# region Second
+def two():
+    return 2
+'''
+
+    root = parse_python_source(source, module_name="sectioned.py")
+
+    assert [(depth, symbol.kind, symbol.display_name) for depth, symbol in flatten_outline(root)] == [
+        (0, "section", "First"),
+        (1, "function", "one()"),
+        (0, "section", "Second"),
+        (1, "function", "two()"),
+    ]
+
+
+def test_format_outline_prints_sections() -> None:
+    source = '''
+# region First
+def one():
+    return 1
+'''
+
+    root = parse_python_source(source, module_name="sectioned.py")
+
+    assert format_outline(root).splitlines() == [
+        "sectioned.py",
+        "  section: First  L2",
+        "    function: one()  L3",
+    ]
+
+
 def test_parse_error_is_reported_as_outline_error() -> None:
     with pytest.raises(OutlineError, match="could not parse bad.py"):
         parse_python_source("def nope(:\n", module_name="bad.py")

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import curses
 from pathlib import Path
-from typing import Final
+from typing import Final, Optional
 
 from .outline import OutlineError, Symbol, flatten_outline, parse_python_file
 
@@ -34,7 +34,7 @@ class State:
         self.center_selected_symbol()
 
     @property
-    def current_symbol(self) -> Symbol | None:
+    def current_symbol(self) -> Optional[Symbol]:
         if not self.items:
             return None
         return self.items[self.selected][1]
@@ -139,7 +139,7 @@ def _draw_outline(
     body_height = max(0, height - 2)
 
     if not state.items:
-        _addnstr(stdscr, y + 1, x + 2, "(no classes or functions)", max(0, width - 4), curses.color_pair(4))
+        _addnstr(stdscr, y + 1, x + 2, "(no sections, classes, or functions)", max(0, width - 4), curses.color_pair(4))
         return
 
     state.outline_top = _adjust_top(state.selected, state.outline_top, body_height)
@@ -153,6 +153,8 @@ def _draw_outline(
         attr = curses.A_REVERSE if index == state.selected else curses.A_NORMAL
         if symbol.kind == "class" and index != state.selected:
             attr |= curses.color_pair(2)
+        elif symbol.kind == "section" and index != state.selected:
+            attr |= curses.A_BOLD
         elif symbol.kind in {"function", "async function"} and index != state.selected:
             attr |= curses.color_pair(3)
         _addnstr(stdscr, line_y, x + 1, label, max(0, width - 2), attr)
@@ -267,6 +269,8 @@ def _code_page_size(stdscr: curses.window) -> int:
 
 
 def _kind_marker(symbol: Symbol) -> str:
+    if symbol.kind == "section":
+        return "S"
     if symbol.kind == "class":
         return "C"
     if symbol.kind == "async function":

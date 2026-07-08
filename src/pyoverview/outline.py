@@ -3,6 +3,10 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
+
+
+SECTION_PREFIX = "# region "
 
 
 class OutlineError(Exception):
@@ -20,6 +24,8 @@ class Symbol:
     @property
     def display_name(self) -> str:
         if self.kind == "module":
+            return self.name
+        if self.kind == "section":
             return self.name
         if self.kind == "async function":
             return f"async {self.name}()"
@@ -55,14 +61,15 @@ def parse_python_source(source: str, module_name: str = "<module>") -> Symbol:
         location = f"{exc.lineno}:{exc.offset}" if exc.lineno else "unknown"
         raise OutlineError(f"could not parse {module_name} at {location}: {exc.msg}") from exc
 
-    children = tuple(_symbols_from_body(tree.body))
-    line_count = max(1, len(source.splitlines()))
+    source_lines = source.splitlines()
+    line_count = max(1, len(source_lines))
+    children = tuple(_apply_sections(_symbols_from_body(tree.body), source_lines, line_count))
     return Symbol(module_name, "module", 1, line_count, children)
 
 
 def format_outline(root: Symbol) -> str:
     if not root.children:
-        return f"{root.display_name}\n  (no classes or functions found)"
+        return f"{root.display_name}\n  (no sections, classes, or functions found)"
     lines = [root.display_name]
     for child in root.children:
         _append_symbol(lines, child, depth=1)
@@ -91,7 +98,7 @@ def _symbols_from_body(body: list[ast.stmt]) -> list[Symbol]:
     return symbols
 
 
-def _symbol_from_node(node: ast.AST) -> Symbol | None:
+def _symbol_from_node(node: ast.AST) -> Optional[Symbol]:
     if isinstance(node, ast.ClassDef):
         return Symbol(
             name=node.name,
@@ -120,6 +127,54 @@ def _symbol_from_node(node: ast.AST) -> Symbol | None:
         )
 
     return None
+
+
+def _apply_sections(symbols: list[Symbol], source_lines: list[str], line_count: int) -> list[Symbol]:
+    sections = _section_markers(source_lines, line_count)
+    if not sections:
+        return symbols
+
+    grouped_symbols: list[Symbol] = []
+    symbol_index = 0
+
+    for section in sections:
+        while symbol_index < len(symbols) and symbols[symbol_index].lineno < section.lineno:
+            grouped_symbols.append(symbols[symbol_index])
+            symbol_index += 1
+
+        section_children: list[Symbol] = []
+        while symbol_index < len(symbols) and symbols[symbol_index].lineno <= section.end_lineno:
+            section_children.append(symbols[symbol_index])
+            symbol_index += 1
+
+        grouped_symbols.append(
+            Symbol(
+                name=section.name,
+                kind=section.kind,
+                lineno=section.lineno,
+                end_lineno=section.end_lineno,
+                children=tuple(section_children),
+            )
+        )
+
+    grouped_symbols.extend(symbols[symbol_index:])
+    return grouped_symbols
+
+
+def _section_markers(source_lines: list[str], line_count: int) -> list[Symbol]:
+    markers: list[tuple[str, int]] = []
+    for line_index, line in enumerate(source_lines, start=1):
+        if not line.startswith(SECTION_PREFIX):
+            continue
+        title = line[len(SECTION_PREFIX) :].strip()
+        if title:
+            markers.append((title, line_index))
+
+    sections: list[Symbol] = []
+    for index, (title, lineno) in enumerate(markers):
+        end_lineno = markers[index + 1][1] - 1 if index + 1 < len(markers) else line_count
+        sections.append(Symbol(title, "section", lineno, end_lineno))
+    return sections
 
 
 def _append_symbol(lines: list[str], symbol: Symbol, depth: int) -> None:
