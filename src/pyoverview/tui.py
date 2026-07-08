@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Final, Optional
 
 from .outline import OutlineError, Symbol, flatten_outline, parse_python_file
+from .syntax import HighlightSpan, python_highlight_spans
 
 
 class CursesUnavailableError(Exception):
@@ -26,6 +27,7 @@ class State:
         self.path = path
         self.root = root
         self.source_lines = source_lines
+        self.highlight_spans = python_highlight_spans(source_lines)
         self.items = flatten_outline(root)
         self.selected = 0
         self.outline_top = 0
@@ -65,6 +67,7 @@ class State:
         selected_lineno = self.current_symbol.lineno if self.current_symbol else 1
         self.root = root
         self.source_lines = source_lines
+        self.highlight_spans = python_highlight_spans(source_lines)
         self.items = flatten_outline(root)
         self.selected = _closest_symbol_index(self.items, selected_lineno)
         self.message = "reloaded"
@@ -188,15 +191,23 @@ def _draw_code(
         if line_index >= len(state.source_lines):
             break
         lineno = line_index + 1
-        raw_line = state.source_lines[line_index].replace("\t", "    ")
+        raw_line = state.source_lines[line_index]
+        display_line = raw_line.expandtabs(4)
         in_symbol = selected_lineno <= lineno <= selected_end
-        attr = curses.color_pair(1) if in_symbol else curses.A_NORMAL
-        if lineno == selected_lineno:
-            attr |= curses.A_BOLD
+        base_attr = curses.A_BOLD if in_symbol else curses.A_NORMAL
 
         gutter = f"{lineno:>{gutter_width - 1}} "
-        _addnstr(stdscr, y + 1 + row, x + 1, gutter, gutter_width, curses.color_pair(4))
-        _addnstr(stdscr, y + 1 + row, x + 1 + gutter_width, raw_line, code_width, attr)
+        gutter_attr = curses.color_pair(4) | (curses.A_BOLD if lineno == selected_lineno else curses.A_NORMAL)
+        _addnstr(stdscr, y + 1 + row, x + 1, gutter, gutter_width, gutter_attr)
+        _draw_highlighted_line(
+            stdscr,
+            y + 1 + row,
+            x + 1 + gutter_width,
+            display_line,
+            code_width,
+            state.highlight_spans.get(lineno, []),
+            base_attr,
+        )
 
 
 def _draw_status(stdscr: curses.window, state: State, y: int, width: int) -> None:
@@ -204,6 +215,31 @@ def _draw_status(stdscr: curses.window, state: State, y: int, width: int) -> Non
     suffix = f" | {state.message}" if state.message else ""
     text = f" {path} | {HELP}{suffix}"
     _addnstr(stdscr, y, 0, text.ljust(max(0, width - 1)), max(0, width - 1), curses.A_REVERSE)
+
+
+def _draw_highlighted_line(
+    stdscr: curses.window,
+    y: int,
+    x: int,
+    line: str,
+    width: int,
+    spans: list[HighlightSpan],
+    base_attr: int,
+) -> None:
+    cursor = 0
+    for span in spans:
+        if cursor >= width:
+            return
+        start = max(0, min(width, span.start))
+        end = max(start, min(width, span.end))
+        if start > cursor:
+            _addnstr(stdscr, y, x + cursor, line[cursor:start], start - cursor, base_attr)
+        if end > start:
+            _addnstr(stdscr, y, x + start, line[start:end], end - start, base_attr | _syntax_attr(span.style))
+        cursor = max(cursor, end)
+
+    if cursor < width:
+        _addnstr(stdscr, y, x + cursor, line[cursor:width], width - cursor, base_attr)
 
 
 def _draw_box(stdscr: curses.window, y: int, x: int, height: int, width: int, title: str) -> None:
@@ -245,10 +281,28 @@ def _init_colors() -> None:
     if not curses.has_colors():
         return
     curses.start_color()
-    curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(1, curses.COLOR_MAGENTA, -1)
     curses.init_pair(2, curses.COLOR_CYAN, -1)
     curses.init_pair(3, curses.COLOR_GREEN, -1)
-    curses.init_pair(4, curses.COLOR_BLACK, -1)
+    curses.init_pair(4, curses.COLOR_BLUE, -1)
+    curses.init_pair(5, curses.COLOR_GREEN, -1)
+    curses.init_pair(6, curses.COLOR_YELLOW, -1)
+    curses.init_pair(7, curses.COLOR_BLUE, -1)
+    curses.init_pair(8, curses.COLOR_CYAN, -1)
+
+
+def _syntax_attr(style: str) -> int:
+    if style == "keyword":
+        return curses.color_pair(1) | curses.A_BOLD
+    if style == "string":
+        return curses.color_pair(5)
+    if style == "number":
+        return curses.color_pair(6)
+    if style == "comment":
+        return curses.color_pair(7)
+    if style == "builtin":
+        return curses.color_pair(8)
+    return curses.A_NORMAL
 
 
 def _left_width(total_width: int) -> int:

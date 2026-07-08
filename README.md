@@ -4,7 +4,8 @@
 module with Python's `ast` module and opens a two-pane TUI:
 
 - left pane: classes, functions, async functions, and nested definitions
-- right pane: source code, automatically scrolled to the selected symbol
+- right pane: syntax-highlighted source code on the terminal's default background,
+  automatically scrolled to the selected symbol
 
 ## Sections
 
