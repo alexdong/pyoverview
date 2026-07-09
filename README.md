@@ -1,15 +1,17 @@
 # pyoverview
 
-`pyoverview` is a small terminal outline browser for Python files. It parses a
-module with Python's `ast` module and opens a two-pane TUI:
+`pyoverview` is a small terminal outline browser for Python and Markdown files.
+For Python, it parses a module with Python's `ast` module. For Markdown, it
+parses `#`, `##`, and `###` headings.
 
-- left pane: classes, functions, async functions, and nested definitions
-- right pane: syntax-highlighted source code on the terminal's default background,
-  automatically scrolled to the selected symbol
+- left pane: classes, functions, async functions, nested definitions, sections,
+  or Markdown headings
+- right pane: source text on the terminal's default background, automatically
+  scrolled to the selected symbol
 
 ![pyoverview terminal UI showing an outline pane and syntax-highlighted code preview](docs/pyoverview.svg)
 
-## Sections
+## Python Sections
 
 Add module-level section comments to group the outline into larger chunks:
 
@@ -83,13 +85,31 @@ reviewer.py
 ```
 
 Only comments starting at the beginning of a line with `# region `, `# %% `,
-`#%% `, `# `, `## `, or `### ` create sections. A section runs until the next
-section marker at the same or higher heading level, or the end of the file.
+`#%% `, `# `, `## `, or `### ` create Python sections. A section runs until the
+next section marker at the same or higher heading level, or the end of the file.
+
+## Markdown Headings
+
+Markdown files use real headings as outline sections:
+
+```markdown
+# Training
+
+## SFT
+
+### Formatting
+
+# Evaluation
+```
+
+Headings inside fenced code blocks are ignored. Only `#`, `##`, and `###`
+headings are included.
 
 ## Install
 
 ```sh
 uvx pyoverview path/to/module.py
+uvx pyoverview path/to/notes.md
 ```
 
 If you are developing locally:

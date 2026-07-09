@@ -8,10 +8,11 @@ from typing import Optional
 
 SECTION_PREFIXES = ("# region ", "# %% ", "#%% ")
 MARKDOWN_HEADING_PREFIXES = (("### ", 3), ("## ", 2), ("# ", 1))
+MARKDOWN_SUFFIXES = {".md", ".markdown"}
 
 
 class OutlineError(Exception):
-    """Raised when a Python file cannot be parsed into an outline."""
+    """Raised when a file cannot be parsed into an outline."""
 
 
 @dataclass(frozen=True)
@@ -51,22 +52,32 @@ class _SectionFrame:
 
 
 def parse_python_file(path: Path) -> tuple[Symbol, list[str]]:
-    path = path.expanduser()
-    if not path.exists():
-        raise OutlineError(f"{path} does not exist")
-    if not path.is_file():
-        raise OutlineError(f"{path} is not a file")
+    path, source = _read_source_file(path)
     if path.suffix != ".py":
         raise OutlineError(f"{path} is not a .py file")
 
-    try:
-        source = path.read_text(encoding="utf-8")
-    except UnicodeDecodeError as exc:
-        raise OutlineError(f"{path} is not valid UTF-8") from exc
-    except OSError as exc:
-        raise OutlineError(f"could not read {path}: {exc}") from exc
-
     root = parse_python_source(source, module_name=path.name)
+    return root, source.splitlines()
+
+
+def parse_markdown_file(path: Path) -> tuple[Symbol, list[str]]:
+    path, source = _read_source_file(path)
+    if path.suffix.lower() not in MARKDOWN_SUFFIXES:
+        raise OutlineError(f"{path} is not a Markdown file")
+
+    root = parse_markdown_source(source, module_name=path.name)
+    return root, source.splitlines()
+
+
+def parse_file(path: Path) -> tuple[Symbol, list[str]]:
+    path, source = _read_source_file(path)
+    suffix = path.suffix.lower()
+    if suffix == ".py":
+        root = parse_python_source(source, module_name=path.name)
+    elif suffix in MARKDOWN_SUFFIXES:
+        root = parse_markdown_source(source, module_name=path.name)
+    else:
+        raise OutlineError(f"{path} is not a supported file (.py, .md, .markdown)")
     return root, source.splitlines()
 
 
@@ -81,6 +92,28 @@ def parse_python_source(source: str, module_name: str = "<module>") -> Symbol:
     line_count = max(1, len(source_lines))
     children = tuple(_apply_sections(_symbols_from_body(tree.body), source_lines, line_count))
     return Symbol(module_name, "module", 1, line_count, children)
+
+
+def parse_markdown_source(source: str, module_name: str = "<document>") -> Symbol:
+    source_lines = source.splitlines()
+    line_count = max(1, len(source_lines))
+    children = tuple(_sections_from_markdown(source_lines, line_count))
+    return Symbol(module_name, "module", 1, line_count, children)
+
+
+def _read_source_file(path: Path) -> tuple[Path, str]:
+    path = path.expanduser()
+    if not path.exists():
+        raise OutlineError(f"{path} does not exist")
+    if not path.is_file():
+        raise OutlineError(f"{path} is not a file")
+
+    try:
+        return path, path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise OutlineError(f"{path} is not valid UTF-8") from exc
+    except OSError as exc:
+        raise OutlineError(f"could not read {path}: {exc}") from exc
 
 
 def format_outline(root: Symbol) -> str:
@@ -146,7 +179,19 @@ def _symbol_from_node(node: ast.AST) -> Optional[Symbol]:
 
 
 def _apply_sections(symbols: list[Symbol], source_lines: list[str], line_count: int) -> list[Symbol]:
-    sections = _section_markers(source_lines)
+    sections = _python_section_markers(source_lines)
+    return _group_symbols_by_sections(symbols, sections, line_count)
+
+
+def _sections_from_markdown(source_lines: list[str], line_count: int) -> list[Symbol]:
+    return _group_symbols_by_sections([], _markdown_section_markers(source_lines), line_count)
+
+
+def _group_symbols_by_sections(
+    symbols: list[Symbol],
+    sections: list[_SectionMarker],
+    line_count: int,
+) -> list[Symbol]:
     if not sections:
         return symbols
 
@@ -170,16 +215,16 @@ def _apply_sections(symbols: list[Symbol], source_lines: list[str], line_count: 
     return grouped_symbols
 
 
-def _section_markers(source_lines: list[str]) -> list[_SectionMarker]:
+def _python_section_markers(source_lines: list[str]) -> list[_SectionMarker]:
     markers: list[_SectionMarker] = []
     for line_index, line in enumerate(source_lines, start=1):
-        marker = _section_marker(line, line_index)
+        marker = _python_section_marker(line, line_index)
         if marker is not None:
             markers.append(marker)
     return markers
 
 
-def _section_marker(line: str, lineno: int) -> Optional[_SectionMarker]:
+def _python_section_marker(line: str, lineno: int) -> Optional[_SectionMarker]:
     if line.strip() in {"# region", "# %%", "#%%"}:
         return None
 
@@ -197,6 +242,55 @@ def _section_marker(line: str, lineno: int) -> Optional[_SectionMarker]:
                 return _SectionMarker(title, level, lineno)
             return None
     return None
+
+
+def _markdown_section_markers(source_lines: list[str]) -> list[_SectionMarker]:
+    markers: list[_SectionMarker] = []
+    fence: Optional[str] = None
+    for line_index, line in enumerate(source_lines, start=1):
+        stripped = line.lstrip()
+        if fence is not None:
+            if stripped.startswith(fence):
+                fence = None
+            continue
+
+        if stripped.startswith("```"):
+            fence = "```"
+            continue
+        if stripped.startswith("~~~"):
+            fence = "~~~"
+            continue
+
+        marker = _markdown_heading_marker(line, line_index)
+        if marker is not None:
+            markers.append(marker)
+    return markers
+
+
+def _markdown_heading_marker(line: str, lineno: int) -> Optional[_SectionMarker]:
+    indent = len(line) - len(line.lstrip(" "))
+    if indent > 3:
+        return None
+
+    candidate = line[indent:]
+    for prefix, level in MARKDOWN_HEADING_PREFIXES:
+        if candidate.startswith(prefix):
+            title = _strip_closing_hashes(candidate[len(prefix) :].strip())
+            if title:
+                return _SectionMarker(title, level, lineno)
+            return None
+    return None
+
+
+def _strip_closing_hashes(title: str) -> str:
+    title = title.rstrip()
+    index = len(title)
+    while index > 0 and title[index - 1] == "#":
+        index -= 1
+
+    if index < len(title) and (index == 0 or title[index - 1].isspace()):
+        return title[:index].rstrip()
+    return title
 
 
 def _append_to_active_section(

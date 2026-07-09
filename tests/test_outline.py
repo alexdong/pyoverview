@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from pyoverview.outline import OutlineError, flatten_outline, format_outline, parse_python_source
+from pyoverview.outline import (
+    OutlineError,
+    flatten_outline,
+    format_outline,
+    parse_file,
+    parse_markdown_source,
+    parse_python_source,
+)
 
 
 SAMPLE = '''
@@ -181,6 +188,57 @@ def run():
         "  section: Runtime  L17",
         "    function: run()  L18",
     ]
+
+
+def test_parse_markdown_source_builds_heading_outline() -> None:
+    source = """# Intro
+Body
+
+## Details ###
+More
+
+```python
+# Ignored
+## Also ignored
+```
+
+### Notes
+Text
+
+# API
+Body
+"""
+
+    root = parse_markdown_source(source, module_name="README.md")
+
+    assert format_outline(root).splitlines() == [
+        "README.md",
+        "  section: Intro  L1",
+        "    section: Details  L4",
+        "      section: Notes  L12",
+        "  section: API  L15",
+    ]
+
+
+def test_parse_file_accepts_markdown_paths(tmp_path) -> None:
+    path = tmp_path / "notes.md"
+    path.write_text("# One\n\n## Two\n", encoding="utf-8")
+
+    root, source_lines = parse_file(path)
+
+    assert source_lines == ["# One", "", "## Two"]
+    assert [(depth, symbol.display_name) for depth, symbol in flatten_outline(root)] == [
+        (0, "One"),
+        (1, "Two"),
+    ]
+
+
+def test_parse_file_rejects_unsupported_suffix(tmp_path) -> None:
+    path = tmp_path / "notes.txt"
+    path.write_text("# One\n", encoding="utf-8")
+
+    with pytest.raises(OutlineError, match="supported file"):
+        parse_file(path)
 
 
 def test_format_outline_prints_sections() -> None:

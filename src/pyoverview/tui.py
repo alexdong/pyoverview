@@ -4,7 +4,7 @@ import curses
 from pathlib import Path
 from typing import Final, Optional
 
-from .outline import OutlineError, Symbol, flatten_outline, parse_python_file
+from .outline import OutlineError, Symbol, flatten_outline, parse_file
 from .syntax import HighlightSpan, python_highlight_spans
 
 
@@ -27,7 +27,7 @@ class State:
         self.path = path
         self.root = root
         self.source_lines = source_lines
-        self.highlight_spans = python_highlight_spans(source_lines)
+        self.highlight_spans = _highlight_spans(path, source_lines)
         self.items = flatten_outline(root)
         self.selected = 0
         self.outline_top = 0
@@ -60,14 +60,14 @@ class State:
 
     def reload(self) -> None:
         try:
-            root, source_lines = parse_python_file(self.path)
+            root, source_lines = parse_file(self.path)
         except OutlineError as exc:
             self.message = str(exc)
             return
         selected_lineno = self.current_symbol.lineno if self.current_symbol else 1
         self.root = root
         self.source_lines = source_lines
-        self.highlight_spans = python_highlight_spans(source_lines)
+        self.highlight_spans = _highlight_spans(self.path, source_lines)
         self.items = flatten_outline(root)
         self.selected = _closest_symbol_index(self.items, selected_lineno)
         self.message = "reloaded"
@@ -172,9 +172,9 @@ def _draw_code(
     width: int,
 ) -> None:
     symbol = state.current_symbol
-    title = " code "
+    title = " source "
     if symbol is not None:
-        title = f" code: {symbol.display_name} L{symbol.lineno} "
+        title = f" source: {symbol.display_name} L{symbol.lineno} "
     _draw_box(stdscr, y, x, height, width, title)
 
     body_height = max(0, height - 2)
@@ -303,6 +303,12 @@ def _syntax_attr(style: str) -> int:
     if style == "builtin":
         return curses.color_pair(8)
     return curses.A_NORMAL
+
+
+def _highlight_spans(path: Path, source_lines: list[str]) -> dict[int, list[HighlightSpan]]:
+    if path.suffix == ".py":
+        return python_highlight_spans(source_lines)
+    return {}
 
 
 def _left_width(total_width: int) -> int:

@@ -1,7 +1,21 @@
-"""Terminal outline browser for Python modules."""
+"""Terminal outline browser for Python and Markdown files."""
 
-from .outline import Symbol, parse_python_file, parse_python_source
+from .outline import (
+    Symbol,
+    parse_file,
+    parse_markdown_file,
+    parse_markdown_source,
+    parse_python_file,
+    parse_python_source,
+)
 
-__all__ = ["Symbol", "parse_python_file", "parse_python_source"]
+__all__ = [
+    "Symbol",
+    "parse_file",
+    "parse_markdown_file",
+    "parse_markdown_source",
+    "parse_python_file",
+    "parse_python_source",
+]
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"

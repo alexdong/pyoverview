@@ -4,16 +4,16 @@ import argparse
 from pathlib import Path
 from typing import Optional
 
-from .outline import OutlineError, format_outline, parse_python_file
+from .outline import OutlineError, format_outline, parse_file
 from .tui import CursesUnavailableError, run_tui
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pyoverview",
-        description="Open a two-pane terminal outline for a Python module.",
+        description="Open a two-pane terminal outline for a Python or Markdown file.",
     )
-    parser.add_argument("file", type=Path, help="Python file to browse")
+    parser.add_argument("file", type=Path, help="Python or Markdown file to browse")
     parser.add_argument(
         "--print",
         action="store_true",
@@ -28,7 +28,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        root, source_lines = parse_python_file(args.file)
+        root, source_lines = parse_file(args.file)
     except OutlineError as exc:
         parser.error(str(exc))
 

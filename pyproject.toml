@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyoverview"
-version = "0.4.1"
-description = "A two-pane terminal outline browser for Python modules."
+version = "0.4.2"
+description = "A two-pane terminal outline browser for Python and Markdown files."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 authors = [{ name = "Alex Dong" }]
-keywords = ["ast", "code", "outline", "tui", "tree"]
+keywords = ["ast", "code", "markdown", "outline", "tui", "tree"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console :: Curses",
