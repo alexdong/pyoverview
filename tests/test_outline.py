@@ -146,6 +146,43 @@ def unsectioned():
     assert [child.display_name for child in root.children[1].children] == ["grpo_dataset()", "unsectioned()"]
 
 
+def test_markdown_heading_comments_group_symbols_into_nested_sections() -> None:
+    source = '''
+# Overview
+def parse():
+    return "parse"
+
+
+## CLI
+def main():
+    return None
+
+
+### Flags
+def build_parser():
+    return object()
+
+
+# Runtime
+def run():
+    return main()
+'''
+
+    root = parse_python_source(source, module_name="headings.py")
+
+    assert format_outline(root).splitlines() == [
+        "headings.py",
+        "  section: Overview  L2",
+        "    function: parse()  L3",
+        "    section: CLI  L7",
+        "      function: main()  L8",
+        "      section: Flags  L12",
+        "        function: build_parser()  L13",
+        "  section: Runtime  L17",
+        "    function: run()  L18",
+    ]
+
+
 def test_format_outline_prints_sections() -> None:
     source = '''
 # region First

@@ -48,20 +48,43 @@ def grpo_dataset():
     ...
 ```
 
-`pyoverview` renders those comments as section nodes:
+Markdown-style comment headings are supported too. `#`, `##`, and `###` create
+nested sections:
+
+```python
+# Training
+
+def load_rows():
+    ...
+
+
+## SFT
+
+def sft_dataset():
+    ...
+
+
+### Formatting
+
+def format_prompt():
+    ...
+```
+
+`pyoverview` renders those comments and headings as section nodes:
 
 ```text
 reviewer.py
-  section: Configuration  L1
-    function: load_config()  L6
-  section: Review Model  L10
-    class: Finding  L12
-    async function: async score_patch()  L16
+  section: Training  L1
+    function: load_rows()  L3
+    section: SFT  L7
+      function: sft_dataset()  L9
+      section: Formatting  L13
+        function: format_prompt()  L15
 ```
 
-Only comments starting at the beginning of a line with `# region `, `# %% `, or
-`#%% ` create sections. A section runs until the next section marker or the end
-of the file.
+Only comments starting at the beginning of a line with `# region `, `# %% `,
+`#%% `, `# `, `## `, or `### ` create sections. A section runs until the next
+section marker at the same or higher heading level, or the end of the file.
 
 ## Install
 

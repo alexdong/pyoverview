@@ -7,6 +7,7 @@ from typing import Optional
 
 
 SECTION_PREFIXES = ("# region ", "# %% ", "#%% ")
+MARKDOWN_HEADING_PREFIXES = (("### ", 3), ("## ", 2), ("# ", 1))
 
 
 class OutlineError(Exception):
@@ -32,6 +33,21 @@ class Symbol:
         if self.kind == "function":
             return f"{self.name}()"
         return self.name
+
+
+@dataclass(frozen=True)
+class _SectionMarker:
+    name: str
+    level: int
+    lineno: int
+
+
+@dataclass
+class _SectionFrame:
+    name: str
+    level: int
+    lineno: int
+    children: list[Symbol] = field(default_factory=list)
 
 
 def parse_python_file(path: Path) -> tuple[Symbol, list[str]]:
@@ -130,57 +146,86 @@ def _symbol_from_node(node: ast.AST) -> Optional[Symbol]:
 
 
 def _apply_sections(symbols: list[Symbol], source_lines: list[str], line_count: int) -> list[Symbol]:
-    sections = _section_markers(source_lines, line_count)
+    sections = _section_markers(source_lines)
     if not sections:
         return symbols
 
     grouped_symbols: list[Symbol] = []
     symbol_index = 0
+    section_stack: list[_SectionFrame] = []
 
     for section in sections:
         while symbol_index < len(symbols) and symbols[symbol_index].lineno < section.lineno:
-            grouped_symbols.append(symbols[symbol_index])
+            _append_to_active_section(grouped_symbols, section_stack, symbols[symbol_index])
             symbol_index += 1
 
-        section_children: list[Symbol] = []
-        while symbol_index < len(symbols) and symbols[symbol_index].lineno <= section.end_lineno:
-            section_children.append(symbols[symbol_index])
-            symbol_index += 1
+        _close_sections(grouped_symbols, section_stack, section.level, section.lineno - 1)
+        section_stack.append(_SectionFrame(section.name, section.level, section.lineno))
 
-        grouped_symbols.append(
-            Symbol(
-                name=section.name,
-                kind=section.kind,
-                lineno=section.lineno,
-                end_lineno=section.end_lineno,
-                children=tuple(section_children),
-            )
-        )
+    while symbol_index < len(symbols):
+        _append_to_active_section(grouped_symbols, section_stack, symbols[symbol_index])
+        symbol_index += 1
 
-    grouped_symbols.extend(symbols[symbol_index:])
+    _close_sections(grouped_symbols, section_stack, 0, line_count)
     return grouped_symbols
 
 
-def _section_markers(source_lines: list[str], line_count: int) -> list[Symbol]:
-    markers: list[tuple[str, int]] = []
+def _section_markers(source_lines: list[str]) -> list[_SectionMarker]:
+    markers: list[_SectionMarker] = []
     for line_index, line in enumerate(source_lines, start=1):
-        title = _section_title(line)
-        if title:
-            markers.append((title, line_index))
-
-    sections: list[Symbol] = []
-    for index, (title, lineno) in enumerate(markers):
-        end_lineno = markers[index + 1][1] - 1 if index + 1 < len(markers) else line_count
-        sections.append(Symbol(title, "section", lineno, end_lineno))
-    return sections
+        marker = _section_marker(line, line_index)
+        if marker is not None:
+            markers.append(marker)
+    return markers
 
 
-def _section_title(line: str) -> Optional[str]:
+def _section_marker(line: str, lineno: int) -> Optional[_SectionMarker]:
+    if line.strip() in {"# region", "# %%", "#%%"}:
+        return None
+
     for prefix in SECTION_PREFIXES:
         if line.startswith(prefix):
             title = line[len(prefix) :].strip()
-            return title or None
+            if title:
+                return _SectionMarker(title, 1, lineno)
+            return None
+
+    for prefix, level in MARKDOWN_HEADING_PREFIXES:
+        if line.startswith(prefix):
+            title = line[len(prefix) :].strip()
+            if title:
+                return _SectionMarker(title, level, lineno)
+            return None
     return None
+
+
+def _append_to_active_section(
+    grouped_symbols: list[Symbol],
+    section_stack: list[_SectionFrame],
+    symbol: Symbol,
+) -> None:
+    if section_stack:
+        section_stack[-1].children.append(symbol)
+    else:
+        grouped_symbols.append(symbol)
+
+
+def _close_sections(
+    grouped_symbols: list[Symbol],
+    section_stack: list[_SectionFrame],
+    next_level: int,
+    end_lineno: int,
+) -> None:
+    while section_stack and section_stack[-1].level >= next_level:
+        section = section_stack.pop()
+        symbol = Symbol(
+            name=section.name,
+            kind="section",
+            lineno=section.lineno,
+            end_lineno=end_lineno,
+            children=tuple(section.children),
+        )
+        _append_to_active_section(grouped_symbols, section_stack, symbol)
 
 
 def _append_symbol(lines: list[str], symbol: Symbol, depth: int) -> None:
